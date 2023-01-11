@@ -127,8 +127,7 @@ napi_value Student::getName(napi_env env, napi_callback_info info) {
   assert(status == napi_ok);
 
   napi_value result;
-  string name = "yizhanzhang";
-  napi_create_string_utf8(env, (char *)name.c_str(), name.length(), &result);
+  napi_create_string_utf8(env, (char *)stu->name.c_str(), stu->name.length(), &result);
   assert(status == napi_ok);
 
   return result;
