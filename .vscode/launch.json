@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+      {
+          "type": "lldb",
+          "request": "launch",
+          "name": "Debug",
+          "program": "/usr/local/bin/node", // Node安装的路径
+          "args": ["${workspaceFolder}/test/index.js"] // 用于调用node-addon的js文件
+      }
+  ]
+}

@@ -3,6 +3,7 @@
 #include <node_api.h>
 
 #define GET_VALUE_FROM_ARGS(convert, argv, value_ref) do { \
+  napi_status status; \
   napi_valuetype valuetype; \
   status = napi_typeof(env, argv, &valuetype); \
   assert(status == napi_ok); \
@@ -13,6 +14,7 @@
 } while(0); \
 
 #define GET_STRING_FROM_ARGS(convert, argv, value_ref) do { \
+  napi_status status; \
   napi_valuetype valuetype; \
   status = napi_typeof(env, argv, &valuetype); \
   assert(status == napi_ok); \
