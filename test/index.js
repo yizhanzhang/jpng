@@ -1,4 +1,5 @@
 const main = require('../build/Debug/main.node');
+
 console.log(main);
 console.log(main.get_more_detail());
 // const { Student } = main;
