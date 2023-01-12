@@ -133,10 +133,28 @@ napi_value Student::getName(napi_env env, napi_callback_info info) {
   return result;
 }
 
+napi_value getMoreDetail(napi_env env, napi_callback_info info) {
+  napi_value detail_value;
+  string detail = "this is yizhan's test";
+  napi_create_string_utf8(env, (char *)detail.c_str(), NAPI_AUTO_LENGTH, &detail_value);
+  return detail_value;
+};
+
 napi_value init(napi_env env, napi_value exports) {
-  napi_value result;
-  napi_create_uint32(env, 0, &result);
-  napi_set_named_property(env, exports, "id", result);
+  // export string
+  napi_value package_name_value;
+  napi_create_string_utf8(env, "yizhan test", NAPI_AUTO_LENGTH,  &package_name_value);
+  napi_set_named_property(env, exports, "package_name", package_name_value);
+
+  // export number
+  napi_value version_value;
+  napi_create_double(env, 0.1, &version_value);
+  napi_set_named_property(env, exports, "version", version_value);
+
+  // export method
+  napi_value func_value;
+  napi_create_function(env, "get_more_detail", NAPI_AUTO_LENGTH, getMoreDetail, nullptr, &func_value);
+  napi_set_named_property(env, exports, "get_more_detail", func_value);
 
   napi_value cons;
   napi_property_descriptor properties[] = {
