@@ -11,7 +11,7 @@ Image::Image() {
 Image::~Image() {
 };
 
-napi_value Image::NodeDefineClass(napi_env env, napi_value exports) {
+napi_value Image::DefineNodeClass(napi_env env, napi_value exports) {
   napi_property_descriptor properties[] = {
     { "id", NULL, NULL, Image::getId, NULL, NULL, napi_default, NULL },
   };
