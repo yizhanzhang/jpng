@@ -1,8 +1,44 @@
 #include <iostream>
+#include <string.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include "png.h"
 #include "jpeglib.h"
 #include "jerror.h"
+#include "util.cpp"
+
+using std::string;
+
+struct Image {
+  uint32_t width;
+  uint32_t height;
+  uint8_t **data;
+};
+void mallocImageData(Image& img, int width, int height) {
+  img.data = (uint8_t **)malloc(img.height*sizeof(png_bytep));
+  for(int y = 0; y < img.height; y++) {
+    img.data[y] = (uint8_t*)malloc(img.width*sizeof(png_bytep));
+  }
+}
+void showImageData(Image& img) {
+  std::cout << "showImagePixelData:" << std::endl;
+  for (int i = 0; i < img.height; i++) {
+    for (int j = 0; j < img.width * 4; j++) {
+      std::cout << unsigned(img.data[i][j]) << " ";
+    }
+    std::cout << std::endl;
+  }
+}
+
+struct ImageReadHost {
+  int position;
+  uint8_t *data;
+};
+void decodeImage(Image& img, string filepath);
+void decodePngBuffer(Image& img, uint8_t *buffer, size_t size);
+void decodeJpegBuffer(Image& img, uint8_t *buffer, size_t size);
+
+void encodeImage(Image& img);
 
 void writeBlankPng(int width, int height);
 
@@ -176,10 +212,12 @@ void write_JPEG_file()
 }
 
 int main() {
-  std::cout << "here is yizhantest" << std::endl;
-  writeBlankPng(2, 2);
-  write_JPEG_file();
-  std::cout << "task is over" << std::endl;
+  string filePath = "test.png";
+  std::cout << "jpng by yizhanzhang: " << filePath << std::endl;
+  Image img;
+  decodeImage(img, filePath);
+  showImageData(img);
+  encodeImage(img);
   return 0;
 }
 
@@ -206,4 +244,75 @@ void writeBlankPng(int width, int height) {
 
   png_destroy_write_struct(&png_ptr, &info_ptr);
   fclose(fp);
-};
+}
+
+void decodeImage(Image& img, string filepath) {
+  struct stat statbuf;
+  if (stat(filepath.c_str(), &statbuf) != 0) {
+    throw std::invalid_argument("open file error:" + filepath);
+  };
+  size_t filesize = statbuf.st_size;
+
+  FILE *fp = fopen((char *)filepath.c_str(), "rb");
+  if (!fp) {
+    throw std::invalid_argument("open file error:" + filepath);
+  }
+  uint8_t buffer[filesize];
+  fread(buffer, filesize, 1, fp);
+  fclose(fp);
+  
+  if (endsWith(filepath, ".png")) {
+    decodePngBuffer(img, buffer, filesize);
+  } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
+    decodeJpegBuffer(img, buffer, filesize);
+  } else {
+    throw std::invalid_argument("unsupport file format");
+  }
+}
+
+void read_png_data_fn(png_structp png_ptr, png_bytep data, size_t length) {
+  ImageReadHost *imgHost = (ImageReadHost *)png_get_io_ptr(png_ptr);
+  memcpy(data, &(imgHost->data[imgHost->position]), length);
+  imgHost->position += length;
+}
+void decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
+  if(png_sig_cmp(buffer, 0, 4)) {
+    throw std::invalid_argument("this is not png");
+  }
+
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+
+  ImageReadHost *imgHost = (ImageReadHost *)malloc(sizeof(ImageReadHost));
+  imgHost->position = 0;
+  imgHost->data = buffer;
+  png_set_read_fn(png_ptr, (void *)imgHost, read_png_data_fn);
+  png_read_info(png_ptr, info_ptr);
+  png_get_IHDR(png_ptr, info_ptr, &img.width, &img.height, NULL, NULL, NULL, NULL, NULL);
+  mallocImageData(img, img.width, img.height);
+  png_read_image(png_ptr, img.data);
+  png_read_end(png_ptr, info_ptr);
+  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+  free(imgHost);
+}
+
+void decodeJpegBuffer(Image& img, uint8_t *buffer, size_t size) {
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+
+  ImageReadHost *imgHost = (ImageReadHost *)malloc(sizeof(ImageReadHost));
+  imgHost->position = 0;
+  imgHost->data = buffer;
+  png_set_read_fn(png_ptr, (void *)imgHost, read_png_data_fn);
+  png_read_info(png_ptr, info_ptr);
+  png_get_IHDR(png_ptr, info_ptr, &img.width, &img.height, NULL, NULL, NULL, NULL, NULL);
+  img.data = (uint8_t **)malloc(img.height * 4 * sizeof(png_bytep));
+  png_read_image(png_ptr, img.data);
+  png_read_end(png_ptr, info_ptr);
+  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+  free(imgHost);
+}
+
+void encodeImage(Image& img) {
+
+}
