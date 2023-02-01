@@ -7,6 +7,7 @@ void writeBlankPng(int width, int height);
 int main() {
   std::cout << "here is yizhantest" << std::endl;
   writeBlankPng(2, 2);
+  std::cout << "task is over" << std::endl;
   return 0;
 }
 
