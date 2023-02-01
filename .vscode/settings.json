@@ -1,0 +1,10 @@
+{
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "files.associations": {
+    "*.texturecube": "json",
+    "*.cjson": "jsonc",
+    "*.wxss": "css",
+    "*.wxs": "javascript",
+    "ios": "cpp"
+  }
+}
