@@ -2,22 +2,22 @@
 #include <stdio.h>
 #include "png.h"
 
-void writeBlankFile(int width, int height);
+void writeBlankPng(int width, int height);
 
 int main() {
   std::cout << "here is yizhantest" << std::endl;
-  writeBlankFile(2, 2);
+  writeBlankPng(2, 2);
   return 0;
 }
 
-void writeBlankFile(int width, int height) {
+void writeBlankPng(int width, int height) {
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (setjmp(png_jmpbuf(png_ptr))) {
     throw std::invalid_argument("png_ptr jmp buf");
   }
 
-  FILE *fp = fopen("yizhantest.png", "wb");
+  FILE *fp = fopen("blank.png", "wb");
   png_init_io(png_ptr, fp);
 
   png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
