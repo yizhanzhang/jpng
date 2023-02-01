@@ -63,10 +63,10 @@ else()
 endif()
 
 # Public CMake configuration variables.
-option(PNG_SHARED "Build shared lib" ON)
+option(PNG_SHARED "Build shared lib" OFF)
 option(PNG_STATIC "Build static lib" ON)
-option(PNG_EXECUTABLES "Build libpng executables" ON)
-option(PNG_TESTS "Build libpng tests" ON)
+option(PNG_EXECUTABLES "Build libpng executables" OFF)
+option(PNG_TESTS "Build libpng tests" OFF)
 
 # Many more configuration options could be added here.
 option(PNG_FRAMEWORK "Build OS X framework" OFF)
