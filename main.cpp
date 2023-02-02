@@ -44,15 +44,15 @@ void Image::showImageData() {
 void decodeImage(Image& img, string filepath);
 void encodeImage(Image& img, string filepath);
 
-int main() {
-  std::cout << "jpng by yizhanzhang: " << std::endl;
+int main(int argc, char *argv[]) {
+  if (argc <= 1) { return 0; }
 
-  string filePath = "ptest.png";
-  string outpath = "test3.jpeg";
+  string filepath = argv[1];
+  string outpath = filepath + (endsWith(filepath, ".png") ? ".jpeg" : ".png");
+  std::cout << "jpng by yizhanzhang: " << filepath << std::endl;
 
   Image img;
-  decodeImage(img, filePath);
-  // img.showImageData();
+  decodeImage(img, filepath);
   encodeImage(img, outpath);
 
   return 0;
