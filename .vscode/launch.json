@@ -10,7 +10,7 @@
       "name": "jpng",
       "program": "${workspaceFolder}/build/jpng",
       "args": [],
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}/build"
     }
   ]
 }

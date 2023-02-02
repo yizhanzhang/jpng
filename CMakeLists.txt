@@ -10,7 +10,7 @@ include_directories(lib/libpng-1.6.39)
 add_subdirectory(lib/libjpeg-turbo)
 include_directories(lib/libjpeg-turbo)
 
-set(src yizhantest.cpp)
+set(src main.cpp)
 add_executable(jpng ${src})
 target_link_libraries(jpng png_static jpeg-static)
 
