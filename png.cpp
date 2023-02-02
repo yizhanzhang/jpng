@@ -1,3 +1,5 @@
+#include "png.h"
+
 struct ImageIOHost {
   int position;
   uint8_t *data;
