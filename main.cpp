@@ -83,11 +83,6 @@ void decodeImage(Image& img, string filepath) {
 }
 
 void encodeImage(Image& img, string filepath) {
-  struct stat statbuf;
-  if (stat(filepath.c_str(), &statbuf) == 0) {
-    // throw std::invalid_argument("stat file already existed:" + filepath);
-  };
-
   if (endsWith(filepath, ".png")) {
     encodePngBuffer(img);
   } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
