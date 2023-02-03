@@ -23,7 +23,28 @@ void decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
   imgHost.data = buffer;
   png_set_read_fn(png_ptr, (void *)&imgHost, read_png_data_fn);
   png_read_info(png_ptr, info_ptr);
-  png_get_IHDR(png_ptr, info_ptr, &img.width, &img.height, NULL, NULL, NULL, NULL, NULL);
+  int bit_depth, color_type;
+  png_get_IHDR(png_ptr, info_ptr, &img.width, &img.height, &bit_depth, &color_type, NULL, NULL, NULL);
+  if (color_type == PNG_COLOR_TYPE_PALETTE) {
+    png_set_expand(png_ptr);
+  } else if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+    png_set_gray_to_rgb(png_ptr);
+  }
+  if (color_type != PNG_COLOR_TYPE_RGB_ALPHA && color_type != PNG_COLOR_TYPE_GRAY_ALPHA) {
+    png_set_add_alpha(png_ptr, 255, PNG_FILTER_NONE);
+  }
+  if (bit_depth < 8) {
+    png_set_packing(png_ptr);
+  } else if (bit_depth == 16) {
+    png_set_strip_16(png_ptr);
+  }
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+    png_set_tRNS_to_alpha(png_ptr);
+  }
+  png_read_update_info(png_ptr, info_ptr);
+  bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+  color_type = png_get_color_type(png_ptr, info_ptr);
+
   img.mallocImageData();
   png_read_image(png_ptr, img.data);
   png_read_end(png_ptr, info_ptr);
