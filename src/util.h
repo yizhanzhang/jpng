@@ -33,4 +33,6 @@ napi_valuetype getValueType(napi_env env, napi_value value);
 
 std::string getStringParam(napi_env env, napi_value value);
 
+bool endsWith(std::string const &str, std::string const &suffix);
+
 #endif
