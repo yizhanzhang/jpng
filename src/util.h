@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 
 #include <node_api.h>
+#include <string>
 
 #define GET_VALUE_FROM_ARGS(convert, argv, value_ref) do { \
   napi_status status; \
@@ -27,5 +28,9 @@
     *value_ref = buf; \
   } \
 } while(0); \
+
+napi_valuetype getValueType(napi_env env, napi_value value);
+
+std::string getStringParam(napi_env env, napi_value value);
 
 #endif

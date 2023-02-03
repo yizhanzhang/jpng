@@ -1,8 +1,4 @@
-#include <node_api.h>
-#include <assert.h>
-#include <string>
 #include "image.h"
-#include "util.h"
 
 Image::Image() {
   id = rand();
@@ -11,9 +7,16 @@ Image::Image() {
 Image::~Image() {
 };
 
+void Image::convertFormat(string inputPath, string outputPath) {
+  // FILE *fp = fopen(inputPath.c_str(), "w");
+  // fwrite(inputPath.c_str(), sizeof(char), inputPath.size(), fp);
+  // fclose(fp);
+};
+
 napi_value Image::DefineNodeClass(napi_env env, napi_value exports) {
   napi_property_descriptor properties[] = {
     { "id", NULL, NULL, Image::getId, NULL, NULL, napi_default, NULL },
+    { "convert", NULL, Image::convert, NULL, NULL, NULL, napi_default, NULL }
   };
   int property_length = sizeof(properties) / sizeof(properties[0]);
 
@@ -56,3 +59,30 @@ napi_value Image::getId(napi_env env, napi_callback_info info) {
 
   return result;
 }
+
+napi_value Image::convert(napi_env env, napi_callback_info info) {
+  napi_value js_object;
+  size_t argc = 2;
+  napi_value argv[argc];
+  napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
+  if (argc < 2) {
+    napi_throw_error(env, NULL, "argc is error");
+    return NULL;
+  }
+  if (getValueType(env, argv[0]) != napi_string) {
+    napi_throw_type_error(env, NULL, "argv[0] is not string");
+    return NULL;
+  }
+  if (getValueType(env, argv[1]) != napi_string) {
+    napi_throw_type_error(env, NULL, "argv[1] is not string");
+    return NULL;
+  }
+  string inputPath = getStringParam(env, argv[0]);
+  string outputPath = getStringParam(env, argv[1]);
+
+  Image *img;
+  napi_unwrap(env, js_object, reinterpret_cast<void **>(&img));
+  img->convertFormat(inputPath, outputPath);
+
+  return NULL;
+};
