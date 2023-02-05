@@ -1,6 +1,5 @@
 /*
- * Copyright (C)2014, 2017, 2023 D. R. Commander.  All Rights Reserved.
- * Copyright (C)2015 Viktor Szathmáry.  All Rights Reserved.
+ * Copyright (C)2014 D. R. Commander.  All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,7 +29,7 @@
 package org.libjpegturbo.turbojpeg;
 
 /**
- * This class encapsulates a planar YUV image and the metadata
+ * This class encapsulates a YUV planar image and the metadata
  * associated with it.  The TurboJPEG API allows both the JPEG compression and
  * decompression pipelines to be split into stages:  YUV encode, compress from
  * YUV, decompress to YUV, and YUV decode.  A <code>YUVImage</code> instance
@@ -38,32 +37,30 @@ package org.libjpegturbo.turbojpeg;
  * operations and as the source image for compress-from-YUV and YUV decode
  * operations.
  * <p>
- * Technically, the JPEG format uses the YCbCr colorspace (which is technically
- * not a colorspace but a color transform), but per the convention of the
- * digital video community, the TurboJPEG API uses "YUV" to refer to an image
- * format consisting of Y, Cb, and Cr image planes.
+ * Technically, the JPEG format uses the YCbCr colorspace (which technically is
+ * not a "colorspace" but rather a "color transform"), but per the convention
+ * of the digital video community, the TurboJPEG API uses "YUV" to refer to an
+ * image format consisting of Y, Cb, and Cr image planes.
  * <p>
  * Each plane is simply a 2D array of bytes, each byte representing the value
  * of one of the components (Y, Cb, or Cr) at a particular location in the
  * image.  The width and height of each plane are determined by the image
  * width, height, and level of chrominance subsampling.  The luminance plane
  * width is the image width padded to the nearest multiple of the horizontal
- * subsampling factor (1 in the case of 4:4:4, grayscale, or 4:4:0; 2 in the
- * case of 4:2:2 or 4:2:0; 4 in the case of 4:1:1.)  Similarly, the luminance
- * plane height is the image height padded to the nearest multiple of the
- * vertical subsampling factor (1 in the case of 4:4:4, 4:2:2, grayscale, or
- * 4:1:1; 2 in the case of 4:2:0 or 4:4:0.)  This is irrespective of any
- * additional padding that may be specified as an argument to the various
- * YUVImage methods.  The chrominance plane width is equal to the luminance
- * plane width divided by the horizontal subsampling factor, and the
- * chrominance plane height is equal to the luminance plane height divided by
- * the vertical subsampling factor.
+ * subsampling factor (2 in the case of 4:2:0 and 4:2:2, 4 in the case of
+ * 4:1:1, 1 in the case of 4:4:4 or grayscale.)  Similarly, the luminance plane
+ * height is the image height padded to the nearest multiple of the vertical
+ * subsampling factor (2 in the case of 4:2:0 or 4:4:0, 1 in the case of 4:4:4
+ * or grayscale.)  The chrominance plane width is equal to the luminance plane
+ * width divided by the horizontal subsampling factor, and the chrominance
+ * plane height is equal to the luminance plane height divided by the vertical
+ * subsampling factor.
  * <p>
  * For example, if the source image is 35 x 35 pixels and 4:2:2 subsampling is
  * used, then the luminance plane would be 36 x 35 bytes, and each of the
- * chrominance planes would be 18 x 35 bytes.  If you specify a row alignment
- * of 4 bytes on top of this, then the luminance plane would be 36 x 35 bytes,
- * and each of the chrominance planes would be 20 x 35 bytes.
+ * chrominance planes would be 18 x 35 bytes.  If you specify a line padding of
+ * 4 bytes on top of this, then the luminance plane would be 36 x 35 bytes, and
+ * each of the chrominance planes would be 20 x 35 bytes.
  */
 public class YUVImage {
 
@@ -77,7 +74,7 @@ public class YUVImage {
    * @param width width (in pixels) of the YUV image
    *
    * @param strides an array of integers, each specifying the number of bytes
-   * per row in the corresponding plane of the YUV image.  Setting the stride
+   * per line in the corresponding plane of the YUV image.  Setting the stride
    * for any plane to 0 is the same as setting it to the plane width (see
    * {@link YUVImage above}.)  If <code>strides</code> is null, then the
    * strides for all planes will be set to their respective plane widths.  When
@@ -89,29 +86,29 @@ public class YUVImage {
    * @param subsamp the level of chrominance subsampling to be used in the YUV
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
-  public YUVImage(int width, int[] strides, int height, int subsamp) {
+  public YUVImage(int width, int[] strides, int height, int subsamp)
+    throws Exception {
     setBuf(null, null, width, strides, height, subsamp, true);
   }
 
   /**
-   * Create a new <code>YUVImage</code> instance backed by a unified buffer,
-   * and allocate memory for the buffer.
+   * Create a new <code>YUVImage</code> instance backed by a unified image
+   * buffer, and allocate memory for the image buffer.
    *
    * @param width width (in pixels) of the YUV image
    *
-   * @param align row alignment (in bytes) of the YUV image (must be a power of
-   * 2.)  Setting this parameter to n specifies that each row in each plane of
-   * the YUV image will be padded to the nearest multiple of n bytes
-   * (1 = unpadded.)
+   * @param pad Each line of each plane in the YUV image buffer will be padded
+   * to this number of bytes (must be a power of 2.)
    *
    * @param height height (in pixels) of the YUV image
    *
    * @param subsamp the level of chrominance subsampling to be used in the YUV
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
-  public YUVImage(int width, int align, int height, int subsamp) {
-    setBuf(new byte[TJ.bufSizeYUV(width, align, height, subsamp)], width,
-           align, height, subsamp);
+  public YUVImage(int width, int pad, int height, int subsamp)
+    throws Exception {
+    setBuf(new byte[TJ.bufSizeYUV(width, pad, height, subsamp)], width, pad,
+           height, subsamp);
   }
 
   /**
@@ -134,11 +131,11 @@ public class YUVImage {
    * @param width width (in pixels) of the new YUV image (or subregion)
    *
    * @param strides an array of integers, each specifying the number of bytes
-   * per row in the corresponding plane of the YUV image.  Setting the stride
+   * per line in the corresponding plane of the YUV image.  Setting the stride
    * for any plane to 0 is the same as setting it to the plane width (see
    * {@link YUVImage above}.)  If <code>strides</code> is null, then the
    * strides for all planes will be set to their respective plane widths.  You
-   * can adjust the strides in order to add an arbitrary amount of row padding
+   * can adjust the strides in order to add an arbitrary amount of line padding
    * to each plane or to specify that this <code>YUVImage</code> instance is a
    * subregion of a larger image (in which case, <code>strides[i]</code> should
    * be set to the plane width of plane <code>i</code> in the larger image.)
@@ -149,35 +146,34 @@ public class YUVImage {
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
   public YUVImage(byte[][] planes, int[] offsets, int width, int[] strides,
-                  int height, int subsamp) {
+                  int height, int subsamp) throws Exception {
     setBuf(planes, offsets, width, strides, height, subsamp, false);
   }
 
   /**
-   * Create a new <code>YUVImage</code> instance from an existing unified
+   * Create a new <code>YUVImage</code> instance from an existing unified image
    * buffer.
    *
-   * @param yuvImage buffer that contains or will receive a unified planar YUV
-   * image.  Use {@link TJ#bufSizeYUV TJ.bufSizeYUV()} to determine the minimum
-   * size for this buffer.  The Y, U (Cb), and V (Cr) image planes are stored
-   * sequentially in the buffer.  (See {@link YUVImage above} for a description
+   * @param yuvImage image buffer that contains or will contain YUV planar
+   * image data.  Use {@link TJ#bufSizeYUV} to determine the minimum size for
+   * this buffer.  The Y, U (Cb), and V (Cr) image planes are stored
+   * sequentially in the buffer (see {@link YUVImage above} for a description
    * of the image format.)
    *
    * @param width width (in pixels) of the YUV image
    *
-   * @param align row alignment (in bytes) of the YUV image (must be a power of
-   * 2.)  Setting this parameter to n specifies that each row in each plane of
-   * the YUV image will be padded to the nearest multiple of n bytes
-   * (1 = unpadded.)
+   * @param pad the line padding used in the YUV image buffer.  For
+   * instance, if each line in each plane of the buffer is padded to the
+   * nearest multiple of 4 bytes, then <code>pad</code> should be set to 4.
    *
    * @param height height (in pixels) of the YUV image
    *
    * @param subsamp the level of chrominance subsampling used in the YUV
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
-  public YUVImage(byte[] yuvImage, int width, int align, int height,
-                  int subsamp) {
-    setBuf(yuvImage, width, align, height, subsamp);
+  public YUVImage(byte[] yuvImage, int width, int pad, int height,
+                  int subsamp) throws Exception {
+    setBuf(yuvImage, width, pad, height, subsamp);
   }
 
   /**
@@ -199,12 +195,12 @@ public class YUVImage {
    * @param width width (in pixels) of the YUV image (or subregion)
    *
    * @param strides an array of integers, each specifying the number of bytes
-   * per row in the corresponding plane of the YUV image.  Setting the stride
+   * per line in the corresponding plane of the YUV image.  Setting the stride
    * for any plane to 0 is the same as setting it to the plane width (see
    * {@link YUVImage above}.)  If <code>strides</code> is null, then the
    * strides for all planes will be set to their respective plane widths.  You
-   * can adjust the strides in order to add an arbitrary amount of row padding
-   * to each plane or to specify that this <code>YUVImage</code> instance is a
+   * can adjust the strides in order to add an arbitrary amount of line padding
+   * to each plane or to specify that this <code>YUVImage</code> image is a
    * subregion of a larger image (in which case, <code>strides[i]</code> should
    * be set to the plane width of plane <code>i</code> in the larger image.)
    *
@@ -213,25 +209,22 @@ public class YUVImage {
    * @param subsamp the level of chrominance subsampling used in the YUV
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
-  public void setBuf(byte[][] planes, int[] offsets, int width, int[] strides,
-                     int height, int subsamp) {
+  public void setBuf(byte[][] planes, int[] offsets, int width, int strides[],
+                     int height, int subsamp) throws Exception {
     setBuf(planes, offsets, width, strides, height, subsamp, false);
   }
 
-  private void setBuf(byte[][] planes, int[] offsets, int width, int[] strides,
-                     int height, int subsamp, boolean alloc) {
+  private void setBuf(byte[][] planes, int[] offsets, int width, int strides[],
+                     int height, int subsamp, boolean alloc) throws Exception {
     if ((planes == null && !alloc) || width < 1 || height < 1 || subsamp < 0 ||
         subsamp >= TJ.NUMSAMP)
-      throw new IllegalArgumentException("Invalid argument in YUVImage::setBuf()");
+      throw new Exception("Invalid argument in YUVImage::setBuf()");
 
     int nc = (subsamp == TJ.SAMP_GRAY ? 1 : 3);
-    if ((planes != null && planes.length != nc) ||
-        (offsets != null && offsets.length != nc) ||
+    if (planes.length != nc || (offsets != null && offsets.length != nc) ||
         (strides != null && strides.length != nc))
-      throw new IllegalArgumentException("YUVImage::setBuf(): planes, offsets, or strides array is the wrong size");
+      throw new Exception("YUVImage::setBuf(): planes, offsets, or strides array is the wrong size");
 
-    if (planes == null)
-      planes = new byte[nc][];
     if (offsets == null)
       offsets = new int[nc];
     if (strides == null)
@@ -246,17 +239,15 @@ public class YUVImage {
         strides[i] = pw;
       if (alloc) {
         if (strides[i] < pw)
-          throw new IllegalArgumentException("Stride must be >= plane width when allocating a new YUV image");
+          throw new Exception("Stride must be >= plane width when allocating a new YUV image");
         planes[i] = new byte[strides[i] * ph];
       }
       if (planes[i] == null || offsets[i] < 0)
-        throw new IllegalArgumentException("Invalid argument in YUVImage::setBuf()");
+        throw new Exception("Invalid argument in YUVImage::setBuf()");
       if (strides[i] < 0 && offsets[i] - planeSize + pw < 0)
-        throw new IllegalArgumentException("Stride for plane " + i +
-                                           " would cause memory to be accessed below plane boundary");
+        throw new Exception("Stride for plane " + i + " would cause memory to be accessed below plane boundary");
       if (planes[i].length < offsets[i] + planeSize)
-        throw new IllegalArgumentException("Image plane " + i +
-                                           " is not large enough");
+        throw new Exception("Image plane " + i + " is not large enough");
     }
 
     yuvPlanes = planes;
@@ -268,44 +259,42 @@ public class YUVImage {
   }
 
   /**
-   * Assign a unified buffer to this <code>YUVImage</code> instance.
+   * Assign a unified image buffer to this <code>YUVImage</code> instance.
    *
-   * @param yuvImage buffer that contains or will receive a unified planar YUV
-   * image.  Use {@link TJ#bufSizeYUV TJ.bufSizeYUV()} to determine the minimum
-   * size for this buffer.  The Y, U (Cb), and V (Cr) image planes are stored
-   * sequentially in the buffer.  (See {@link YUVImage above} for a description
+   * @param yuvImage image buffer that contains or will contain YUV planar
+   * image data.  Use {@link TJ#bufSizeYUV} to determine the minimum size for
+   * this buffer.  The Y, U (Cb), and V (Cr) image planes are stored
+   * sequentially in the buffer (see {@link YUVImage above} for a description
    * of the image format.)
    *
    * @param width width (in pixels) of the YUV image
    *
-   * @param align row alignment (in bytes) of the YUV image (must be a power of
-   * 2.)  Setting this parameter to n specifies that each row in each plane of
-   * the YUV image will be padded to the nearest multiple of n bytes
-   * (1 = unpadded.)
+   * @param pad the line padding used in the YUV image buffer.  For
+   * instance, if each line in each plane of the buffer is padded to the
+   * nearest multiple of 4 bytes, then <code>pad</code> should be set to 4.
    *
    * @param height height (in pixels) of the YUV image
    *
    * @param subsamp the level of chrominance subsampling used in the YUV
    * image (one of {@link TJ#SAMP_444 TJ.SAMP_*})
    */
-  public void setBuf(byte[] yuvImage, int width, int align, int height,
-                     int subsamp) {
-    if (yuvImage == null || width < 1 || align < 1 ||
-        ((align & (align - 1)) != 0) || height < 1 || subsamp < 0 ||
-        subsamp >= TJ.NUMSAMP)
-      throw new IllegalArgumentException("Invalid argument in YUVImage::setBuf()");
-    if (yuvImage.length < TJ.bufSizeYUV(width, align, height, subsamp))
-      throw new IllegalArgumentException("YUV buffer is not large enough");
-
+  public void setBuf(byte[] yuvImage, int width, int pad, int height,
+                     int subsamp) throws Exception {
+    if (yuvImage == null || width < 1 || pad < 1 || ((pad & (pad - 1)) != 0) ||
+        height < 1 || subsamp < 0 || subsamp >= TJ.NUMSAMP)
+      throw new Exception("Invalid argument in YUVImage::setBuf()");
+    if (yuvImage.length < TJ.bufSizeYUV(width, pad, height, subsamp))
+      throw new Exception("YUV image buffer is not large enough");
+    
     int nc = (subsamp == TJ.SAMP_GRAY ? 1 : 3);
     byte[][] planes = new byte[nc][];
     int[] strides = new int[nc];
     int[] offsets = new int[nc];
 
     planes[0] = yuvImage;
-    strides[0] = pad(TJ.planeWidth(0, width, subsamp), align);
+    strides[0] = PAD(TJ.planeWidth(0, width, subsamp), pad);
     if (subsamp != TJ.SAMP_GRAY) {
-      strides[1] = strides[2] = pad(TJ.planeWidth(1, width, subsamp), align);
+      strides[1] = strides[2] = PAD(TJ.planeWidth(1, width, subsamp), pad);
       planes[1] = planes[2] = yuvImage;
       offsets[1] = offsets[0] +
         strides[0] * TJ.planeHeight(0, height, subsamp);
@@ -313,7 +302,7 @@ public class YUVImage {
         strides[1] * TJ.planeHeight(1, height, subsamp);
     }
 
-    yuvAlign = align;
+    yuvPad = pad;
     setBuf(planes, offsets, width, strides, height, subsamp);
   }
 
@@ -322,9 +311,9 @@ public class YUVImage {
    *
    * @return the width of the YUV image (or subregion)
    */
-  public int getWidth() {
+  public int getWidth() throws Exception {
     if (yuvWidth < 1)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvWidth;
   }
 
@@ -333,34 +322,34 @@ public class YUVImage {
    *
    * @return the height of the YUV image (or subregion)
    */
-  public int getHeight() {
+  public int getHeight() throws Exception {
     if (yuvHeight < 1)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvHeight;
   }
 
   /**
-   * Returns the row alignment (in bytes) of the YUV buffer (if this image is
+   * Returns the line padding used in the YUV image buffer (if this image is
    * stored in a unified buffer rather than separate image planes.)
    *
-   * @return the row alignment of the YUV buffer
+   * @return the line padding used in the YUV image buffer
    */
-  public int getPad() {
+  public int getPad() throws Exception {
     if (yuvPlanes == null)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
-    if (yuvAlign < 1 || ((yuvAlign & (yuvAlign - 1)) != 0))
-      throw new IllegalStateException("Image is not stored in a unified buffer");
-    return yuvAlign;
+      throw new Exception(NO_ASSOC_ERROR);
+    if (yuvPad < 1 || ((yuvPad & (yuvPad - 1)) != 0))
+      throw new Exception("Image is not stored in a unified buffer");
+    return yuvPad;
   }
 
   /**
-   * Returns the number of bytes per row of each plane in the YUV image.
+   * Returns the number of bytes per line of each plane in the YUV image.
    *
-   * @return the number of bytes per row of each plane in the YUV image
+   * @return the number of bytes per line of each plane in the YUV image
    */
-  public int[] getStrides() {
+  public int[] getStrides() throws Exception {
     if (yuvStrides == null)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvStrides;
   }
 
@@ -371,9 +360,9 @@ public class YUVImage {
    * @return the offsets (in bytes) of each plane within the planes of a larger
    * YUV image
    */
-  public int[] getOffsets() {
+  public int[] getOffsets() throws Exception {
     if (yuvOffsets == null)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvOffsets;
   }
 
@@ -383,9 +372,9 @@ public class YUVImage {
    *
    * @return the level of chrominance subsampling used in the YUV image
    */
-  public int getSubsamp() {
+  public int getSubsamp() throws Exception {
     if (yuvSubsamp < 0 || yuvSubsamp >= TJ.NUMSAMP)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvSubsamp;
   }
 
@@ -395,58 +384,58 @@ public class YUVImage {
    *
    * @return the YUV image planes
    */
-  public byte[][] getPlanes() {
+  public byte[][] getPlanes() throws Exception {
     if (yuvPlanes == null)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     return yuvPlanes;
   }
 
   /**
-   * Returns the YUV buffer (if this image is stored in a unified buffer rather
-   * than separate image planes.)
+   * Returns the YUV image buffer (if this image is stored in a unified
+   * buffer rather than separate image planes.)
    *
-   * @return the YUV buffer
+   * @return the YUV image buffer
    */
-  public byte[] getBuf() {
+  public byte[] getBuf() throws Exception {
     if (yuvPlanes == null || yuvSubsamp < 0 || yuvSubsamp >= TJ.NUMSAMP)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     int nc = (yuvSubsamp == TJ.SAMP_GRAY ? 1 : 3);
     for (int i = 1; i < nc; i++) {
       if (yuvPlanes[i] != yuvPlanes[0])
-        throw new IllegalStateException("Image is not stored in a unified buffer");
+        throw new Exception("Image is not stored in a unified buffer");
     }
     return yuvPlanes[0];
   }
 
   /**
-   * Returns the size (in bytes) of the YUV buffer (if this image is stored in
-   * a unified buffer rather than separate image planes.)
+   * Returns the size (in bytes) of the YUV image buffer (if this image is
+   * stored in a unified buffer rather than separate image planes.)
    *
-   * @return the size (in bytes) of the YUV buffer
+   * @return the size (in bytes) of the YUV image buffer
    */
-  public int getSize() {
+  public int getSize() throws Exception {
     if (yuvPlanes == null || yuvSubsamp < 0 || yuvSubsamp >= TJ.NUMSAMP)
-      throw new IllegalStateException(NO_ASSOC_ERROR);
+      throw new Exception(NO_ASSOC_ERROR);
     int nc = (yuvSubsamp == TJ.SAMP_GRAY ? 1 : 3);
-    if (yuvAlign < 1)
-      throw new IllegalStateException("Image is not stored in a unified buffer");
+    if (yuvPad < 1)
+      throw new Exception("Image is not stored in a unified buffer");
     for (int i = 1; i < nc; i++) {
       if (yuvPlanes[i] != yuvPlanes[0])
-        throw new IllegalStateException("Image is not stored in a unified buffer");
+        throw new Exception("Image is not stored in a unified buffer");
     }
-    return TJ.bufSizeYUV(yuvWidth, yuvAlign, yuvHeight, yuvSubsamp);
+    return TJ.bufSizeYUV(yuvWidth, yuvPad, yuvHeight, yuvSubsamp);
   }
 
-  private static int pad(int v, int p) {
+  private static final int PAD(int v, int p) {
     return (v + p - 1) & (~(p - 1));
   }
 
-  private long handle = 0;
-  private byte[][] yuvPlanes = null;
-  private int[] yuvOffsets = null;
-  private int[] yuvStrides = null;
-  private int yuvAlign = 1;
-  private int yuvWidth = 0;
-  private int yuvHeight = 0;
-  private int yuvSubsamp = -1;
-}
+  protected long handle = 0;
+  protected byte[][] yuvPlanes = null;
+  protected int[] yuvOffsets = null;
+  protected int[] yuvStrides = null;
+  protected int yuvPad = 0;
+  protected int yuvWidth = 0;
+  protected int yuvHeight = 0;
+  protected int yuvSubsamp = -1;
+};

@@ -1,5 +1,6 @@
 #include "image.h"
 #include "png.cpp"
+#include "jpeg.cpp"
 
 Binding::Binding() {
   img = new Image();
@@ -101,14 +102,18 @@ Result decodeImage(Image* img, string filepath) {
   fread(buffer, filesize, 1, fp);
   fclose(fp);
   
+  Result (*decodeFunc)(Image &img, uint8_t *buffer, size_t size);
+
   if (endsWith(filepath, ".png")) {
-    decodePngBuffer(*img, buffer, filesize);
+    decodeFunc = decodePngBuffer;
   } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
-    // decodeJpegBuffer(img, buffer, filesize);
+    decodeFunc = decodeJpegBuffer;
   } else {
     result.setError("unsupport file format" + filepath);
     return result;
   }
+
+  result = decodeFunc(*img, buffer, filesize);
   return result;
 };
 
@@ -117,9 +122,8 @@ Result encodeImage(Image* img, string filepath) {
   Result (*encodeFunc)(Image &img);
   if (endsWith(filepath, ".png")) {
     encodeFunc = encodePngBuffer;
-  // } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
-    // encodeJpegBuffer(img);
-    // encodeFunc = encodeJpegBuffer;
+  } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
+    encodeFunc = encodeJpegBuffer;
   } else {
     result.setError("unsupport file format" + filepath);
     return result;

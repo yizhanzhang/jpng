@@ -7,8 +7,14 @@
         "src/image.cpp",
         "src/util.cpp"
       ],
-      "dependencies": ["lib/gyp/libpng.gyp:libpng"],
-      "include_dirs": ["lib/libpng-1.6.39"]
+      "dependencies": [
+        "lib/gyp/libpng.gyp:libpng",
+        "lib/gyp/libjpeg.gyp:libjpeg"
+      ],
+      "include_dirs": [
+        "lib/libpng-1.6.39",
+        "lib/libjpeg-turbo"
+      ]
     }
   ]
 }
