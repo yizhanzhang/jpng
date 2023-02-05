@@ -13,7 +13,6 @@ void read_png_data_fn(png_structp png_ptr, png_bytep data, size_t length) {
 }
 void decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
   if(png_sig_cmp(buffer, 0, 4)) {
-    napi_throw_error(img._env, NULL, "this is not png");
     return void(0);
   }
 
@@ -78,8 +77,79 @@ void encodePngBuffer(Image& img) {
   png_destroy_write_struct(&png_ptr, &info_ptr);
 };
 
+Binding::Binding() {
+  img = new Image();
+};
+
+Binding::~Binding() {
+  delete img;
+};
+
+napi_value Binding::DefineNodeClass(napi_env env, napi_value exports) {
+  napi_property_descriptor properties[] = {
+    { "convert", NULL, Binding::convert, NULL, NULL, NULL, napi_default, NULL }
+  };
+  int property_length = sizeof(properties) / sizeof(properties[0]);
+
+  napi_value cons;
+  napi_define_class(env, "Image", NAPI_AUTO_LENGTH, Binding::NodeClassConstructor, nullptr, property_length, properties, &cons);
+  return cons;
+};
+
+napi_value Binding::NodeClassConstructor(napi_env env, napi_callback_info info) {
+  napi_status status;
+  napi_value js_object;
+
+  size_t argc = 0; 
+  napi_value argv;
+  status = napi_get_cb_info(env, info, &argc, &argv, &js_object, NULL);
+  assert(status == napi_ok);
+
+  Binding *obj = new Binding();
+  napi_wrap(env, js_object, reinterpret_cast<void *>(obj), Binding::Destructor, nullptr, nullptr);
+  assert(status == napi_ok);
+  obj->_env = env;
+
+  return js_object;
+};
+
+void Binding::Destructor(napi_env env, void* finalize_data, void* finalize_hint) {
+  Binding *obj = reinterpret_cast<Binding *>(finalize_data);
+  delete obj;
+};
+
+napi_value Binding::convert(napi_env env, napi_callback_info info) {
+  napi_value js_object;
+  size_t argc = 2;
+  napi_value argv[argc];
+  napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
+  if (argc < 2) {
+    napi_throw_error(env, NULL, "argc is error");
+    return NULL;;
+  }
+  if (getValueType(env, argv[0]) != napi_string) {
+    napi_throw_type_error(env, NULL, "argv[0] is not string");
+    return NULL;;
+  }
+  if (getValueType(env, argv[1]) != napi_string) {
+    napi_throw_type_error(env, NULL, "argv[1] is not string");
+    return NULL;;
+  }
+  string inputPath = getStringParam(env, argv[0]);
+  string outputPath = getStringParam(env, argv[1]);
+
+  Binding *obj;
+  napi_unwrap(env, js_object, reinterpret_cast<void **>(&obj));
+  Result result = obj->img->convertFormat(inputPath, outputPath);
+  if (result.flag == -1) {
+    napi_throw_error(obj->_env, NULL, result.err.c_str());
+  }
+
+  return NULL;
+};
+
+
 Image::Image() {
-  id = rand();
   data = NULL;
   buffer = NULL;
 };
@@ -89,22 +159,21 @@ Image::~Image() {
   freeImageData();
 };
 
-void node_error(Image& img, string msg) {
-  napi_throw_error(img._env, NULL, msg.c_str());
-};
-
-int decodeImage(Image* img, string filepath) {
+Result decodeImage(Image* img, string filepath) {
+  Result result;
   struct stat statbuf;
   if (stat(filepath.c_str(), &statbuf) != 0) {
-    node_error(*img, "find file error:" + filepath);
-    return -1;
+    result.flag = -1;
+    result.err = "find file error:" + filepath;
+    return result;
   };
   size_t filesize = statbuf.st_size;
 
   FILE *fp = fopen((char *)filepath.c_str(), "rb");
   if (!fp) {
-    node_error(*img, "open file error:" + filepath);
-    return -1;
+    result.flag = -1;
+    result.err = "open file error:" + filepath;
+    return result;
   }
   uint8_t buffer[filesize];
   fread(buffer, filesize, 1, fp);
@@ -115,39 +184,44 @@ int decodeImage(Image* img, string filepath) {
   } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
     // decodeJpegBuffer(img, buffer, filesize);
   } else {
-    node_error(*img, "unsupport file format");
-    return -1;
+    result.flag = -1;
+    result.err = "unsupport file format" + filepath;
+    return result;
   }
-  return 0;
+  return result;
 };
 
-int encodeImage(Image* img, string filepath) {
+Result encodeImage(Image* img, string filepath) {
+  Result result;
   if (endsWith(filepath, ".png")) {
     encodePngBuffer(*img);
   } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
     // encodeJpegBuffer(img);
   } else {
-    node_error(*img, "unsupport file format");
-    return -1;
+    result.flag = -1;
+    result.err = "unsupport file format" + filepath;
+    return result;
   }
 
   FILE *fp = fopen((char *)filepath.c_str(), "wb");
   if (!fp) {
-    node_error(*img, "open file error:" + filepath);
-    return -1;
+    result.flag = -1;
+    result.err = "open file error:" + filepath;
+    return result;
   }
   fwrite((*img).buffer, (*img).bufferSize, 1, fp);
   fclose(fp);
 
-  return 0;
+  return result;
 };
 
-void Image::convertFormat(string inputPath, string outputPath) {
-  int flag;
-  flag = decodeImage(this, inputPath);
-  if (flag == -1) return void(0);
-  flag = encodeImage(this, outputPath);
-  if (flag == -1) return void(0);
+Result Image::convertFormat(string inputPath, string outputPath) {
+  Result result;
+  result = decodeImage(this, inputPath);
+  if (result.flag == -1) return result;
+  result = encodeImage(this, outputPath);
+  if (result.flag == -1) return result;
+  return result;
 };
 
 void Image::mallocImageData() {
@@ -180,77 +254,3 @@ void Image::showImageData() {
     std::cout << std::endl;
   }
 }
-
-napi_value Image::DefineNodeClass(napi_env env, napi_value exports) {
-  napi_property_descriptor properties[] = {
-    { "id", NULL, NULL, Image::getId, NULL, NULL, napi_default, NULL },
-    { "convert", NULL, Image::convert, NULL, NULL, NULL, napi_default, NULL }
-  };
-  int property_length = sizeof(properties) / sizeof(properties[0]);
-
-  napi_value cons;
-  napi_define_class(env, "Image", NAPI_AUTO_LENGTH, Image::NodeClassConstructor, nullptr, property_length, properties, &cons);
-  return cons;
-};
-
-napi_value Image::NodeClassConstructor(napi_env env, napi_callback_info info) {
-  napi_status status;
-  napi_value js_object;
-
-  size_t argc = 0; 
-  napi_value argv;
-  status = napi_get_cb_info(env, info, &argc, &argv, &js_object, NULL);
-  assert(status == napi_ok);
-
-  Image *img = new Image();
-  napi_wrap(env, js_object, reinterpret_cast<void *>(img), Image::Destructor, nullptr, nullptr);
-  assert(status == napi_ok);
-  img->_env = env;
-
-  return js_object;
-};
-
-void Image::Destructor(napi_env env, void* finalize_data, void* finalize_hint) {
-  Image *img = reinterpret_cast<Image *>(finalize_data);
-  delete img;
-};
-
-napi_value Image::getId(napi_env env, napi_callback_info info) {
-  napi_value js_object;
-  napi_get_cb_info(env, info, 0, nullptr, &js_object, nullptr);
-
-  Image *img;
-  napi_unwrap(env, js_object, reinterpret_cast<void **>(&img));
-
-  napi_value result;
-  napi_create_int32(env, img->id, &result);
-
-  return result;
-}
-
-napi_value Image::convert(napi_env env, napi_callback_info info) {
-  napi_value js_object;
-  size_t argc = 2;
-  napi_value argv[argc];
-  napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
-  if (argc < 2) {
-    napi_throw_error(env, NULL, "argc is error");
-    return NULL;;
-  }
-  if (getValueType(env, argv[0]) != napi_string) {
-    napi_throw_type_error(env, NULL, "argv[0] is not string");
-    return NULL;;
-  }
-  if (getValueType(env, argv[1]) != napi_string) {
-    napi_throw_type_error(env, NULL, "argv[1] is not string");
-    return NULL;;
-  }
-  string inputPath = getStringParam(env, argv[0]);
-  string outputPath = getStringParam(env, argv[1]);
-
-  Image *img;
-  napi_unwrap(env, js_object, reinterpret_cast<void **>(&img));
-  img->convertFormat(inputPath, outputPath);
-
-  return NULL;
-};

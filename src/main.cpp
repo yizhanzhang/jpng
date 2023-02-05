@@ -30,8 +30,8 @@ napi_value init(napi_env env, napi_value exports) {
   napi_set_named_property(env, exports, "getMoreDetail", func_value);
 
   // export class
-  napi_value ImageCons = Image::DefineNodeClass(env, exports);
-  napi_set_named_property(env, exports, "Image", ImageCons);
+  napi_value BindingImageCons = Binding::DefineNodeClass(env, exports);
+  napi_set_named_property(env, exports, "Image", BindingImageCons);
 
   return exports;
 };

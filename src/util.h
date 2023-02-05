@@ -3,6 +3,8 @@
 #include <node_api.h>
 #include <string>
 
+// struct Result;
+
 #define GET_VALUE_FROM_ARGS(convert, argv, value_ref) do { \
   napi_status status; \
   napi_valuetype valuetype; \

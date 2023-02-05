@@ -1,5 +1,11 @@
 #include "util.h"
 
+struct Result
+{
+  bool flag;
+  std::string err;
+};
+
 napi_valuetype getValueType(napi_env env, napi_value value) {
   napi_valuetype valuetype;
   napi_typeof(env, value, &valuetype);
