@@ -9,7 +9,7 @@
       ],
       "dependencies": [
         "lib/gyp/libpng.gyp:libpng",
-        "lib/gyp/libjpeg.gyp:libjpeg"
+        "lib/gyp/libjpeg-turbo.gyp:libjpeg"
       ],
       "include_dirs": [
         "lib/libpng-1.6.39",
