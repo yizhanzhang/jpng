@@ -8,10 +8,10 @@ void read_png_data_fn(png_structp png_ptr, png_bytep data, size_t length) {
   memcpy(data, &(imgHost->data[imgHost->position]), length);
   imgHost->position += length;
 }
-Result decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
+Result decodePngBuffer(Image& img, CompressData& inputData) {
   Result result;
 
-  if(png_sig_cmp(buffer, 0, 4)) {
+  if(png_sig_cmp(inputData.buffer, 0, 4)) {
     result.flag = -1;
     result.err = "this is not png";
     return result;
@@ -22,7 +22,7 @@ Result decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
 
   ImageIOHost imgHost;
   imgHost.position = 0;
-  imgHost.data = buffer;
+  imgHost.data = inputData.buffer;
   png_set_read_fn(png_ptr, (void *)&imgHost, read_png_data_fn);
   png_read_info(png_ptr, info_ptr);
   int bit_depth, color_type;
@@ -62,7 +62,7 @@ void write_date_fn(png_structp png_ptr, png_bytep data, size_t length) {
   memcpy(&imgHost->data[imgHost->position], data, length);
   imgHost->position += length;
 }
-Result encodePngBuffer(Image& img) {
+Result encodePngBuffer(Image& img, CompressData& outputData) {
   Result result;
 
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -76,8 +76,8 @@ Result encodePngBuffer(Image& img) {
   png_write_info(png_ptr, info_ptr);
   png_write_image(png_ptr, img.data);
   png_write_end(png_ptr, info_ptr);
-  img.buffer = imgHost.data;
-  img.bufferSize = imgHost.position;
+  outputData.buffer = imgHost.data;
+  outputData.length = imgHost.position;
 
   png_destroy_write_struct(&png_ptr, &info_ptr);
 

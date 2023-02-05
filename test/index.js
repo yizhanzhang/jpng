@@ -1,8 +1,10 @@
-const fs = require('fs');
-const main = require('../build/Debug/main.node');
+const path = require('path');
+const binding = require('../binding/index');
 
-console.log(main);
-const img = new main.Image();
-const inputBuffer = fs.readFileSync("yizhan.png");
-console.log(inputBuffer);
-// img.convert("yizhan.png", "yizhan_o.jpeg");
+const inputPath = path.join(__dirname, "test.png");
+const outputPath = path.join(__dirname, "test_o.png");
+
+console.log(binding);
+const img = new binding.Image();
+img.decode(inputPath);
+img.encode(outputPath);

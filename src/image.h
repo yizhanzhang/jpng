@@ -18,12 +18,10 @@ class Image {
     uint32_t width;
     uint32_t height;
     uint8_t **data;  // 解码后的位图数据
-    uint8_t *buffer; // 编码后的文件数据
-    unsigned long bufferSize;
-    Result convertFormat(string inputPath, string outputPath);
+    Result decodeImage(CompressData& inputPath);
+    Result encodeImage(CompressData& inputPath);
     void mallocImageData();
     void freeImageData();
-    void freeBuffer();
     void showImageData();
 };
 
@@ -36,8 +34,8 @@ class Binding {
     static napi_value DefineNodeClass(napi_env env, napi_value exports);
     static napi_value NodeClassConstructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void* finalize_data, void* finalize_hint);
-    static napi_value getId(napi_env env, napi_callback_info info);
-    static napi_value convert(napi_env env, napi_callback_info info);
+    static napi_value decode(napi_env env, napi_callback_info info);
+    static napi_value encode(napi_env env, napi_callback_info info);
 };
 
 #endif

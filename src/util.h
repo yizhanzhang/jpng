@@ -4,6 +4,13 @@
 #include <node_api.h>
 #include <string>
 
+struct CompressData {
+  std::string type;
+  uint8_t *buffer;
+  size_t length;
+  CompressData();
+};
+
 struct Result
 {
   int flag;
@@ -40,6 +47,7 @@ struct Result
 napi_valuetype getValueType(napi_env env, napi_value value);
 
 std::string getStringParam(napi_env env, napi_value value);
+CompressData getBufferParam (napi_env env, napi_value value);
 
 bool endsWith(std::string const &str, std::string const &suffix);
 

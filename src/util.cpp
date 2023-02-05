@@ -1,5 +1,10 @@
 #include "util.h"
 
+CompressData::CompressData() {
+  buffer = NULL;
+  length = 0;
+};
+
 void Result::setError(std::string msg) {
   flag = -1;
   err = msg;
@@ -22,6 +27,12 @@ std::string getStringParam(napi_env env, napi_value value) {
   };
   std::string str = buf;
   return str;
+}
+
+CompressData getBufferParam(napi_env env, napi_value value) {
+  CompressData data;
+  napi_get_buffer_info(env, value, (void **)&data.buffer, &data.length);
+  return data;
 }
 
 bool endsWith(std::string const &str, std::string const &suffix) {

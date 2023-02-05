@@ -1,7 +1,7 @@
 #include "jpeglib.h"
 #include "jerror.h"
 
-Result decodeJpegBuffer(Image& img, uint8_t *buffer, size_t size) {
+Result decodeJpegBuffer(Image& img, CompressData& inputData) {
   Result result;
 
   jpeg_decompress_struct cinfo;
@@ -9,7 +9,7 @@ Result decodeJpegBuffer(Image& img, uint8_t *buffer, size_t size) {
   cinfo.err = jpeg_std_error(&jerror);
 
   jpeg_create_decompress(&cinfo);
-  jpeg_mem_src(&cinfo, buffer, size);
+  jpeg_mem_src(&cinfo, inputData.buffer, inputData.length);
   jpeg_read_header(&cinfo, TRUE);
   cinfo.out_color_space = JCS_EXT_RGBA;
   jpeg_start_decompress(&cinfo);
@@ -27,7 +27,7 @@ Result decodeJpegBuffer(Image& img, uint8_t *buffer, size_t size) {
   return result;
 }
 
-Result encodeJpegBuffer(Image& img) {
+Result encodeJpegBuffer(Image& img, CompressData& outputData) {
   Result result;
 
   jpeg_compress_struct cinfo;
@@ -35,7 +35,9 @@ Result encodeJpegBuffer(Image& img) {
   cinfo.err = jpeg_std_error(&jerror);
 
   jpeg_create_compress(&cinfo);
-  jpeg_mem_dest(&cinfo, (unsigned char **)&img.buffer, (unsigned long *)&img.bufferSize);
+  uint8_t *buffer;
+  size_t length;
+  jpeg_mem_dest(&cinfo, &outputData.buffer, &outputData.length);
   cinfo.image_width = img.width;
 	cinfo.image_height = img.height;
 	cinfo.input_components = 4;

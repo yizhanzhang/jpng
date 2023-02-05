@@ -12,7 +12,8 @@ Binding::~Binding() {
 
 napi_value Binding::DefineNodeClass(napi_env env, napi_value exports) {
   napi_property_descriptor properties[] = {
-    { "convert", NULL, Binding::convert, NULL, NULL, NULL, napi_default, NULL }
+    { "decode", NULL, Binding::decode, NULL, NULL, NULL, napi_default, NULL },
+    { "encode", NULL, Binding::encode, NULL, NULL, NULL, napi_default, NULL }
   };
   int property_length = sizeof(properties) / sizeof(properties[0]);
 
@@ -43,29 +44,31 @@ void Binding::Destructor(napi_env env, void* finalize_data, void* finalize_hint)
   delete obj;
 };
 
-napi_value Binding::convert(napi_env env, napi_callback_info info) {
+napi_value Binding::decode(napi_env env, napi_callback_info info) {
   napi_value js_object;
   size_t argc = 2;
   napi_value argv[argc];
   napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
   if (argc < 2) {
     napi_throw_error(env, NULL, "argc is error");
-    return NULL;;
+    return NULL;
   }
   if (getValueType(env, argv[0]) != napi_string) {
     napi_throw_type_error(env, NULL, "argv[0] is not string");
-    return NULL;;
+    return NULL;
   }
-  if (getValueType(env, argv[1]) != napi_string) {
-    napi_throw_type_error(env, NULL, "argv[1] is not string");
-    return NULL;;
+  bool isBuffer;
+  napi_is_buffer(env, argv[1], &isBuffer);
+  if (!isBuffer) {
+    napi_throw_type_error(env, NULL, "argv[0] is not buffer");
+    return NULL;
   }
-  string inputPath = getStringParam(env, argv[0]);
-  string outputPath = getStringParam(env, argv[1]);
+  CompressData inputData = getBufferParam(env, argv[1]);
+  inputData.type = getStringParam(env, argv[0]);
 
   Binding *obj;
   napi_unwrap(env, js_object, reinterpret_cast<void **>(&obj));
-  Result result = obj->img->convertFormat(inputPath, outputPath);
+  Result result = obj->img->decodeImage(inputData);
   if (result.flag == -1) {
     napi_throw_error(obj->_env, NULL, result.err.c_str());
   }
@@ -73,86 +76,82 @@ napi_value Binding::convert(napi_env env, napi_callback_info info) {
   return NULL;
 };
 
+napi_value Binding::encode(napi_env env, napi_callback_info info) {
+  napi_value js_object;
+  size_t argc = 2;
+  napi_value argv[argc];
+  napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
+  if (argc < 1) {
+    napi_throw_error(env, NULL, "argc is error");
+    return NULL;
+  }
+  if (getValueType(env, argv[0]) != napi_string) {
+    napi_throw_type_error(env, NULL, "argv[0] is not string");
+    return NULL;
+  }
+  CompressData outputData;
+  outputData.type = getStringParam(env, argv[0]);
+
+  Binding *obj;
+  napi_unwrap(env, js_object, reinterpret_cast<void **>(&obj));
+  Result result = obj->img->encodeImage(outputData);
+  if (result.flag == -1) {
+    napi_throw_error(obj->_env, NULL, result.err.c_str());
+  }
+
+  napi_value buffer;
+  napi_create_buffer_copy(env, outputData.length, outputData.buffer, nullptr, &buffer);
+
+  return buffer;
+};
+
 
 Image::Image() {
   data = NULL;
-  buffer = NULL;
 };
 
 Image::~Image() {
-  freeBuffer();
   freeImageData();
 };
 
-Result decodeImage(Image* img, string filepath) {
+Result Image::decodeImage(CompressData& inputData) {
   Result result;
-  struct stat statbuf;
-  if (stat(filepath.c_str(), &statbuf) != 0) {
-    result.setError("find file error:" + filepath);
-    return result;
-  };
-  size_t filesize = statbuf.st_size;
 
-  FILE *fp = fopen((char *)filepath.c_str(), "rb");
-  if (!fp) {
-    result.setError("open file error:" + filepath);
-    return result;
-  }
-  uint8_t buffer[filesize];
-  fread(buffer, filesize, 1, fp);
-  fclose(fp);
-  
-  Result (*decodeFunc)(Image &img, uint8_t *buffer, size_t size);
+  Result (*decodeFunc)(Image &img, CompressData& inputData);
 
-  if (endsWith(filepath, ".png")) {
+  if (inputData.type == "png") {
     decodeFunc = decodePngBuffer;
-  } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
+  } else if(inputData.type == "jpg"|| inputData.type == "jpeg") {
     decodeFunc = decodeJpegBuffer;
   } else {
-    result.setError("unsupport file format" + filepath);
+    result.setError("unsupport file format:" + inputData.type);
     return result;
   }
 
-  result = decodeFunc(*img, buffer, filesize);
+  result = decodeFunc(*this, inputData);
   return result;
 };
 
-Result encodeImage(Image* img, string filepath) {
+Result Image::encodeImage(CompressData& outputData) {
   Result result;
-  Result (*encodeFunc)(Image &img);
-  if (endsWith(filepath, ".png")) {
+  Result (*encodeFunc)(Image &img, CompressData& outputData);
+  if (outputData.type == "png") {
     encodeFunc = encodePngBuffer;
-  } else if(endsWith(filepath, ".jpg") || endsWith(filepath, ".jpeg")) {
+  } else if(outputData.type == "jpg"|| outputData.type == "jpeg") {
     encodeFunc = encodeJpegBuffer;
   } else {
-    result.setError("unsupport file format" + filepath);
+    result.setError("unsupport file format:" + outputData.type);
     return result;
   }
 
-  result = encodeFunc(*img);
+  result = encodeFunc(*this, outputData);
   if(result.flag == -1) {
     return result;
   }
 
-  FILE *fp = fopen((char *)filepath.c_str(), "wb");
-  if (!fp) {
-    result.setError("open file error:" + filepath);
-    return result;
-  }
-  fwrite((*img).buffer, (*img).bufferSize, 1, fp);
-  fclose(fp);
-
   return result;
 };
 
-Result Image::convertFormat(string inputPath, string outputPath) {
-  Result result;
-  result = decodeImage(this, inputPath);
-  if (result.flag == -1) return result;
-  result = encodeImage(this, outputPath);
-  if (result.flag == -1) return result;
-  return result;
-};
 
 void Image::mallocImageData() {
   freeImageData();
@@ -168,11 +167,6 @@ void Image::freeImageData() {
     free(data[i]);
   }
   free(data);
-};
-
-void Image::freeBuffer() {
-  if (data == NULL) return;
-  free(buffer);
 };
 
 void Image::showImageData() {
