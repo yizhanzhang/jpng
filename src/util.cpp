@@ -1,9 +1,8 @@
 #include "util.h"
 
-struct Result
-{
-  bool flag;
-  std::string err;
+void Result::setError(std::string msg) {
+  flag = -1;
+  err = msg;
 };
 
 napi_valuetype getValueType(napi_env env, napi_value value) {

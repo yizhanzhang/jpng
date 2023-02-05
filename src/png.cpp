@@ -1,5 +1,3 @@
-#include "png.h"
-
 struct ImageIOHost {
   int position;
   uint8_t *data;
@@ -10,10 +8,13 @@ void read_png_data_fn(png_structp png_ptr, png_bytep data, size_t length) {
   memcpy(data, &(imgHost->data[imgHost->position]), length);
   imgHost->position += length;
 }
-void decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
+Result decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
+  Result result;
+
   if(png_sig_cmp(buffer, 0, 4)) {
-    napi_throw_error(img._env, NULL, "this is not png");
-    return void(0);
+    result.flag = -1;
+    result.err = "this is not png";
+    return result;
   }
 
   png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -50,6 +51,8 @@ void decodePngBuffer(Image& img, uint8_t *buffer, size_t size) {
   png_read_image(png_ptr, img.data);
   png_read_end(png_ptr, info_ptr);
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+
+  return result;
 }
 
 void write_date_fn(png_structp png_ptr, png_bytep data, size_t length) {
@@ -59,7 +62,9 @@ void write_date_fn(png_structp png_ptr, png_bytep data, size_t length) {
   memcpy(&imgHost->data[imgHost->position], data, length);
   imgHost->position += length;
 }
-void encodePngBuffer(Image& img) {
+Result encodePngBuffer(Image& img) {
+  Result result;
+
   png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   png_infop info_ptr = png_create_info_struct(png_ptr);
 
@@ -75,4 +80,6 @@ void encodePngBuffer(Image& img) {
   img.bufferSize = imgHost.position;
 
   png_destroy_write_struct(&png_ptr, &info_ptr);
-}
+
+  return result;
+};

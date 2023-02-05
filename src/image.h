@@ -11,12 +11,6 @@
 
 using std::string;
 
-struct Result
-{
-  int flag;
-  std::string err;
-};
-
 class Image {
   public:
     Image();

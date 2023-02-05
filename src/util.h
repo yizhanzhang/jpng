@@ -1,9 +1,15 @@
 #ifndef UTIL_H
+#define UTIL_H
 
 #include <node_api.h>
 #include <string>
 
-// struct Result;
+struct Result
+{
+  int flag;
+  std::string err;
+  void setError(std::string msg);
+};
 
 #define GET_VALUE_FROM_ARGS(convert, argv, value_ref) do { \
   napi_status status; \
