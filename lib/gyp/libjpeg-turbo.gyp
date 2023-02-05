@@ -1,7 +1,7 @@
 {
   "targets": [{
     "target_name": "libjpeg",
-    "type": 'static_library',
+    "type": "static_library",
     "sources": [
       "../libjpeg-turbo/bmp.c",
       "../libjpeg-turbo/cdjpeg.c",
@@ -79,7 +79,7 @@
       "../libjpeg-turbo/wrjpgcom.c",
       "../libjpeg-turbo/wrppm.c",
       "../libjpeg-turbo/wrrle.c",
-      "../libjpeg-turbo/wrtarga.c",
-    ],
+      "../libjpeg-turbo/wrtarga.c"
+    ]
   }]
 }
