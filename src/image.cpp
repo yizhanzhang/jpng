@@ -10,41 +10,44 @@ Image::~Image() {
   freeImageData();
 };
 
+Image::HandleMap Image::createHanldeMap() {
+  Image::HandleMap ret;
+
+  Image::ImageHandle pngHandle = { decodePngBuffer, encodePngBuffer };
+  ret.insert({"png", pngHandle});
+
+  Image::ImageHandle jpegHandle = { decodePngBuffer, encodePngBuffer };
+  ret.insert({"jpg", jpegHandle});
+  ret.insert({"jpeg", jpegHandle});
+
+  return ret;
+};
+
+Image::HandleMap Image::handleMap = Image::createHanldeMap();
+
 Result Image::decodeImage(CompressData& inputData) {
   Result result;
 
-  Result (*decodeFunc)(Image &img, CompressData& inputData);
-
-  if (inputData.type == "png") {
-    decodeFunc = decodePngBuffer;
-  } else if(inputData.type == "jpg"|| inputData.type == "jpeg") {
-    decodeFunc = decodeJpegBuffer;
-  } else {
+  Image::HandleMap::iterator iter = Image::handleMap.find(inputData.type);
+  if (iter == Image::handleMap.end()) {
     result.setError("unsupport file format:" + inputData.type);
     return result;
   }
 
-  result = decodeFunc(*this, inputData);
+  result = iter->second.decode(*this, inputData);
   return result;
 };
 
 Result Image::encodeImage(CompressData& outputData) {
   Result result;
-  Result (*encodeFunc)(Image &img, CompressData& outputData);
-  if (outputData.type == "png") {
-    encodeFunc = encodePngBuffer;
-  } else if(outputData.type == "jpg"|| outputData.type == "jpeg") {
-    encodeFunc = encodeJpegBuffer;
-  } else {
+
+  Image::HandleMap::iterator iter = Image::handleMap.find(outputData.type);
+  if (iter == Image::handleMap.end()) {
     result.setError("unsupport file format:" + outputData.type);
     return result;
   }
 
-  result = encodeFunc(*this, outputData);
-  if(result.flag == -1) {
-    return result;
-  }
-
+  result = iter->second.encode(*this, outputData);
   return result;
 };
 
