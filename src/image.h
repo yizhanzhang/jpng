@@ -25,17 +25,4 @@ class Image {
     void showImageData();
 };
 
-class Binding {
-  public:
-    napi_env _env;
-    Image* img;
-    Binding();
-    ~Binding();
-    static napi_value DefineNodeClass(napi_env env, napi_value exports);
-    static napi_value NodeClassConstructor(napi_env env, napi_callback_info info);
-    static void Destructor(napi_env env, void* finalize_data, void* finalize_hint);
-    static napi_value decode(napi_env env, napi_callback_info info);
-    static napi_value encode(napi_env env, napi_callback_info info);
-};
-
 #endif
