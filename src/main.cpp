@@ -10,7 +10,7 @@ class Binding {
   public:
     napi_env _env;
     Image* img;
-    Binding();
+    Binding(napi_env env);
     ~Binding();
     static napi_value DefineNodeClass(napi_env env, napi_value exports);
     static napi_value NodeClassConstructor(napi_env env, napi_callback_info info);
@@ -19,7 +19,8 @@ class Binding {
     static napi_value encode(napi_env env, napi_callback_info info);
 };
 
-Binding::Binding() {
+Binding::Binding(napi_env env) {
+  _env = env;
   img = new Image();
 };
 
@@ -48,10 +49,9 @@ napi_value Binding::NodeClassConstructor(napi_env env, napi_callback_info info) 
   status = napi_get_cb_info(env, info, &argc, &argv, &js_object, NULL);
   assert(status == napi_ok);
 
-  Binding *obj = new Binding();
+  Binding *obj = new Binding(env);
   napi_wrap(env, js_object, reinterpret_cast<void *>(obj), Binding::Destructor, nullptr, nullptr);
   assert(status == napi_ok);
-  obj->_env = env;
 
   return js_object;
 };
