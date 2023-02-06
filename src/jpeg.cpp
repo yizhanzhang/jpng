@@ -35,8 +35,6 @@ Result encodeJpegBuffer(Image& img, CompressData& outputData) {
   cinfo.err = jpeg_std_error(&jerror);
 
   jpeg_create_compress(&cinfo);
-  uint8_t *buffer;
-  size_t length;
   jpeg_mem_dest(&cinfo, &outputData.buffer, &outputData.length);
   cinfo.image_width = img.width;
 	cinfo.image_height = img.height;
