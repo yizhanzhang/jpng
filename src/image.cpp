@@ -34,6 +34,7 @@ Result Image::decodeImage(CompressData& inputData) {
     return result;
   }
 
+  this->freeImageData();
   result = iter->second.decode(*this, inputData);
   return result;
 };
@@ -63,7 +64,6 @@ Result Image::setPixels(uint32_t inputWidth, uint32_t inputHeight, uint8_t **inp
 
 
 void Image::mallocImageData() {
-  freeImageData();
   data = (uint8_t **)malloc(height * sizeof(png_bytep));
   for(uint32_t i = 0; i < height; i++) {
     data[i] = (uint8_t*)malloc(4 * width*sizeof(png_byte));
@@ -73,9 +73,11 @@ void Image::mallocImageData() {
 void Image::freeImageData() {
   if (data == NULL) return;
   for (uint32_t i = 0; i < height; i++) {
+    if (data == NULL) continue;
     free(data[i]);
   }
   free(data);
+  data = NULL;
 };
 
 void Image::showImageData() {
