@@ -8,6 +8,9 @@ class Image {
   constructor() {
     this.__image = new originImage();
   }
+  setPixels(width, height, data) {
+    this.__image.setPixels(width, height, data);
+  }
   decode(inputPath) {
     const inputType = path.extname(inputPath).slice(1);
     const inputBuffer = fs.readFileSync(inputPath);

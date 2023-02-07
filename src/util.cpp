@@ -17,14 +17,10 @@ napi_valuetype getValueType(napi_env env, napi_value value) {
 };
 
 std::string getStringParam(napi_env env, napi_value value) {
-  size_t bufsize = 1024;
-  char buf[bufsize];
-  size_t result;
-  napi_get_value_string_utf8(env, value, buf, bufsize, &result);
-  if (result >= bufsize) {
-    napi_throw_error(env, NULL, "getStringParam oversize");
-    return NULL;
-  };
+  size_t bufsize = 0;
+  napi_get_value_string_utf8(env, value, nullptr, 0, &bufsize);
+  char buf[bufsize + 1];
+  napi_get_value_string_utf8(env, value, buf, bufsize+1, &bufsize);
   std::string str = buf;
   return str;
 }

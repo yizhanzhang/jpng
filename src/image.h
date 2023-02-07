@@ -27,6 +27,7 @@ class Image {
     ~Image();
     Result decodeImage(CompressData& inputPath);
     Result encodeImage(CompressData& inputPath);
+    Result setPixels(uint32_t inputWidth, uint32_t inputHeight, uint8_t **inputData);
     uint32_t width;
     uint32_t height;
     uint8_t **data;  // 解码后的位图数据

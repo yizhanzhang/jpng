@@ -51,6 +51,16 @@ Result Image::encodeImage(CompressData& outputData) {
   return result;
 };
 
+Result Image::setPixels(uint32_t inputWidth, uint32_t inputHeight, uint8_t **inputData) {
+  Result result;
+
+  width = inputWidth;
+  height = inputHeight;
+  data = inputData;
+
+  return result;
+}
+
 
 void Image::mallocImageData() {
   freeImageData();

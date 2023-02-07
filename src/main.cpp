@@ -17,6 +17,7 @@ class Binding {
     static void Destructor(napi_env env, void* finalize_data, void* finalize_hint);
     static napi_value decode(napi_env env, napi_callback_info info);
     static napi_value encode(napi_env env, napi_callback_info info);
+    static napi_value setPixels(napi_env env, napi_callback_info info);
 };
 
 Binding::Binding(napi_env env) {
@@ -30,8 +31,9 @@ Binding::~Binding() {
 
 napi_value Binding::DefineNodeClass(napi_env env, napi_value exports) {
   napi_property_descriptor properties[] = {
+    { "setPixels", NULL, Binding::setPixels, NULL, NULL, NULL, napi_default, NULL },
     { "decode", NULL, Binding::decode, NULL, NULL, NULL, napi_default, NULL },
-    { "encode", NULL, Binding::encode, NULL, NULL, NULL, napi_default, NULL }
+    { "encode", NULL, Binding::encode, NULL, NULL, NULL, napi_default, NULL },
   };
   int property_length = sizeof(properties) / sizeof(properties[0]);
 
@@ -121,6 +123,58 @@ napi_value Binding::encode(napi_env env, napi_callback_info info) {
 
   return buffer;
 };
+
+napi_value Binding::setPixels(napi_env env, napi_callback_info info) {
+  napi_value js_object;
+  size_t argc = 3;
+  napi_value argv[argc];
+  napi_get_cb_info(env, info, &argc, argv, &js_object, NULL);
+  if (argc < 3) {
+    napi_throw_error(env, NULL, "argc is error");
+    return NULL;
+  }
+  if (getValueType(env, argv[0]) != napi_number) {
+    napi_throw_type_error(env, NULL, "argv[0] is not number");
+    return NULL;
+  }
+  if (getValueType(env, argv[1]) != napi_number) {
+    napi_throw_type_error(env, NULL, "argv[1] is not number");
+    return NULL;
+  }
+  uint32_t width;
+  napi_get_value_uint32(env, argv[0], &width);
+  uint32_t height;
+  napi_get_value_uint32(env, argv[1], &height);
+  uint32_t arrayLength = 0;
+  napi_get_array_length(env, argv[2], &arrayLength);
+  if (width * height * 4 != arrayLength) {
+    napi_throw_type_error(env, NULL, "data size is error");
+    return NULL;
+  }
+  uint8_t **data= (uint8_t **)malloc(height * sizeof(uint8_t *));
+  for (uint32_t i = 0; i < height; i++) {
+    data[i] = (uint8_t *)malloc(width * 4 * sizeof(uint8_t));
+  }
+  for (uint32_t i = 0; i < height; i++) {
+    for (uint32_t j = 0; j < width * 4; j++) {
+      uint32_t index = i * width * 4 + j;
+      napi_value e;
+      napi_get_element(env, argv[2], index, &e);
+      uint32_t v = 0;
+      napi_get_value_uint32(env, e, &v);
+      data[i][j] = v;
+    }
+  }
+
+  Binding *obj;
+  napi_unwrap(env, js_object, reinterpret_cast<void **>(&obj));
+  Result result = obj->img->setPixels(width, height, data);
+  if (result.flag == -1) {
+    napi_throw_error(obj->_env, NULL, result.err.c_str());
+  }
+
+  return NULL;
+}
 
 napi_value getMoreDetail(napi_env env, napi_callback_info info) {
   napi_value detail_value;
