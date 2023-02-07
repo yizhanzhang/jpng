@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "m1": "arch -x86_64 zsh",
+    "config": "node-gyp configure",
+    "build": "node-gyp build --debug",
+    "test": "node test/index.js",
+    "bt": "npm run build && npm run test"
+  }
+}
